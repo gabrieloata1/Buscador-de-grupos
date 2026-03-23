@@ -627,6 +627,21 @@
         <div class="table-header"><h3>🔥 Termos mais buscados</h3></div>
         <div style="padding:20px" id="topBuscas"><div class="spinner"></div></div>
       </div>
+
+      <!-- Configurações do app -->
+      <div class="form-box" style="margin-top:24px">
+        <h3>⚙️ Configurações do App</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Chave SerpAPI (busca na web)</label>
+            <input type="text" id="serpKeyInput" placeholder="Cole a nova chave aqui"/>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <button class="btn-primary" onclick="salvarSerpKey()">Salvar chave</button>
+          <span id="serpKeyStatus" style="font-size:13px;color:var(--muted)"></span>
+        </div>
+      </div>
     </div>
 
     <!-- GRUPOS -->
@@ -800,6 +815,50 @@
   async function carregarTudo() {
     carregarStats()
     carregarTopBuscas()
+    carregarSerpKey()
+  }
+
+  async function carregarSerpKey() {
+    try {
+      const res  = await api('/rest/v1/configuracoes?chave=eq.serp_key&select=valor')
+      const data = await res.json()
+      if (data?.[0]?.valor) {
+        const val = data[0].valor
+        document.getElementById('serpKeyInput').placeholder = val.substring(0, 12) + '••••••••••••••••••••'
+        document.getElementById('serpKeyStatus').textContent = '✅ Chave ativa'
+      }
+    } catch(e) {}
+  }
+
+  async function salvarSerpKey() {
+    const novaChave = document.getElementById('serpKeyInput').value.trim()
+    if (!novaChave) return toast('Cole a nova chave antes de salvar.', 'erro')
+
+    const statusEl = document.getElementById('serpKeyStatus')
+    statusEl.textContent = 'Salvando...'
+
+    // Tenta update primeiro, se não existir faz insert
+    const res = await api('/rest/v1/configuracoes?chave=eq.serp_key', {
+      method: 'PATCH',
+      body: JSON.stringify({ valor: novaChave }),
+      headers: { 'Prefer': 'return=minimal' }
+    })
+
+    if (res.status === 404 || res.status === 204) {
+      // Se não existia, insere
+      if (res.status === 404) {
+        await api('/rest/v1/configuracoes', {
+          method: 'POST',
+          body: JSON.stringify({ chave: 'serp_key', valor: novaChave })
+        })
+      }
+    }
+
+    document.getElementById('serpKeyInput').value = ''
+    document.getElementById('serpKeyInput').placeholder = novaChave.substring(0, 12) + '••••••••••••••••••••'
+    statusEl.textContent = '✅ Chave atualizada!'
+    toast('Chave SerpAPI atualizada!', 'ok')
+    setTimeout(() => statusEl.textContent = '✅ Chave ativa', 3000)
   }
 
   async function api(path, opts = {}) {
