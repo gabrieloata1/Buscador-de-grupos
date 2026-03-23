@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Buscador de Grupos</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+
+  <style>
+    :root {
+      --bg: #080b12;
+      --surface: #0f1420;
+      --border: #1e2535;
+      --accent: #00e5ff;
+      --accent2: #7c3aed;
+      --text: #e8ecf4;
+      --muted: #5a6478;
+      --item-bg: #111828;
+      --item-hover: #161f30;
+      --wpp: #25d366;
+      --tg: #0088cc;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Background grid effect */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Glow blob */
+    body::after {
+      content: '';
+      position: fixed;
+      top: -200px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 400px;
+      background: radial-gradient(ellipse, rgba(0,229,255,0.07) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 60px 20px 80px;
+    }
+
+    /* Header */
+    header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .badge {
+      display: inline-block;
+      font-family: 'Syne', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid rgba(0,229,255,0.3);
+      padding: 5px 14px;
+      border-radius: 20px;
+      margin-bottom: 20px;
+      background: rgba(0,229,255,0.05);
+    }
+
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(32px, 6vw, 52px);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -1px;
+    }
+
+    h1 span {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 300;
+    }
+
+    /* Search */
+    .search-wrap {
+      position: relative;
+      margin-bottom: 12px;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 18px;
+      pointer-events: none;
+    }
+
+    #busca {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 18px 18px 52px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    #busca::placeholder { color: var(--muted); }
+
+    #busca:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0,229,255,0.1);
+    }
+
+    /* Filters */
+    .filters {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 7px 14px;
+      font-size: 13px;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .filter-btn.active {
+      background: rgba(0,229,255,0.1);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Dropdown categoria */
+    .dropdown-wrap {
+      position: relative;
+      margin-bottom: 12px;
+    }
+
+    #dropCategoria {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 18px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      outline: none;
+      appearance: none;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    #dropCategoria:focus { border-color: var(--accent); }
+
+    .dropdown-arrow {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      color: var(--muted);
+    }
+
+    .cat-chip {
+      display: inline-block;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: rgba(124,58,237,0.15);
+      color: #a78bfa;
+      border: 1px solid rgba(124,58,237,0.25);
+      margin-top: 4px;
+    }
+
+    .cat-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    /* Status bar */
+    .status {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 16px;
+      min-height: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* Results list */
+    #resultados {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .grupo-item {
+      background: var(--item-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      transition: background 0.15s, border-color 0.15s, transform 0.15s;
+      animation: fadeUp 0.2s ease both;
+    }
+
+    .grupo-item:hover {
+      background: var(--item-hover);
+      border-color: rgba(0,229,255,0.3);
+      transform: translateY(-1px);
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .grupo-info {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      overflow: hidden;
+    }
+
+    .plataforma-badge {
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .plataforma-badge.wpp { background: rgba(37,211,102,0.15); color: var(--wpp); }
+    .plataforma-badge.tg  { background: rgba(0,136,204,0.15); color: var(--tg); }
+    .plataforma-badge.outro { background: rgba(255,255,255,0.07); color: var(--muted); }
+
+    .grupo-nome {
+      font-size: 15px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .grupo-cat {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .entrar-btn {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--accent);
+      border: 1px solid rgba(0,229,255,0.3);
+      border-radius: 6px;
+      padding: 5px 12px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+
+    .grupo-item:hover .entrar-btn {
+      background: rgba(0,229,255,0.1);
+    }
+
+    /* Empty / loading states */
+    .estado {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+
+    .estado-icon {
+      font-size: 40px;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+
+    .estado p { font-size: 14px; }
+
+    /* Spinner */
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Config modal */
+    .config-bar {
+      background: rgba(255,193,7,0.08);
+      border: 1px solid rgba(255,193,7,0.25);
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-bottom: 28px;
+      font-size: 13px;
+      color: #ffc107;
+    }
+
+    .config-bar strong { display: block; margin-bottom: 8px; }
+
+    .config-bar input {
+      width: 100%;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,193,7,0.3);
+      border-radius: 6px;
+      padding: 8px 12px;
+      color: var(--text);
+      font-size: 13px;
+      font-family: monospace;
+      margin-bottom: 6px;
+      outline: none;
+    }
+
+    .config-bar button {
+      background: rgba(255,193,7,0.15);
+      border: 1px solid rgba(255,193,7,0.4);
+      color: #ffc107;
+      border-radius: 6px;
+      padding: 7px 16px;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <header>
+    <div class="badge">🔍 Buscador de Grupos</div>
+    <h1>Encontre seu<br/><span>grupo ideal</span></h1>
+    <p class="subtitle">+1.000.000 grupos de WhatsApp e Telegram</p>
+  </header>
+
+  <!-- Config bar (visível até configurar o Supabase) -->
+  <div class="config-bar" id="configBar">
+    <strong>⚙️ Configure sua conexão Supabase</strong>
+    <input type="text" id="inputUrl" placeholder="URL do projeto: https://xyzxyz.supabase.co"/>
+    <input type="text" id="inputKey" placeholder="anon key do projeto"/>
+    <button onclick="salvarConfig()">Salvar e conectar</button>
+  </div>
+
+  <!-- Busca -->
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="busca" placeholder="Ex: vendas, marketing, programação..." autocomplete="off"/>
+  </div>
+
+  <!-- Dropdown de categoria -->
+  <div class="dropdown-wrap">
+    <select id="dropCategoria">
+      <option value="">Todas as categorias</option>
+    </select>
+    <span class="dropdown-arrow">▼</span>
+  </div>
+
+  <!-- Filtros de plataforma -->
+  <div class="filters" style="margin-bottom:8px">
+    <button class="filter-btn active" data-plataforma="">Todos</button>
+    <button class="filter-btn" data-plataforma="WhatsApp">WhatsApp</button>
+    <button class="filter-btn" data-plataforma="Telegram">Telegram</button>
+  </div>
+
+  <!-- Filtros de categoria botões -->
+  <div class="filters" id="catBtns">
+    <button class="filter-btn active" data-cat="">Todas</button>
+  </div>
+
+  <!-- Status -->
+  <div class="status" id="status"></div>
+
+  <!-- Resultados -->
+  <div id="resultados">
+    <div class="estado">
+      <div class="estado-icon">👆</div>
+      <p>Digite o nome do grupo para buscar</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let SB_URL = ''
+  let SB_KEY = ''
+  let filtroPlatforma = ''
+  let filtroCategoria = ''
+  let debounceTimer = null
+
+  // ─── Config ─────────────────────────────────────────────────────
+  function salvarConfig() {
+    const url = document.getElementById('inputUrl').value.trim().replace(/\/$/, '')
+    const key = document.getElementById('inputKey').value.trim()
+    if (!url || !key) return alert('Preencha a URL e a Key')
+    SB_URL = url
+    SB_KEY = key
+    localStorage.setItem('sb_url', url)
+    localStorage.setItem('sb_key', key)
+    document.getElementById('configBar').style.display = 'none'
+    setStatus('✅ Conectado ao Supabase')
+    setTimeout(() => { setStatus(''); carregarCategorias() }, 1000)
+  }
+
+  const savedUrl = localStorage.getItem('sb_url')
+  const savedKey = localStorage.getItem('sb_key')
+  if (savedUrl && savedKey) {
+    SB_URL = savedUrl
+    SB_KEY = savedKey
+    document.getElementById('configBar').style.display = 'none'
+    window.addEventListener('DOMContentLoaded', carregarCategorias)
+  }
+
+  // ─── Carrega categorias do banco ─────────────────────────────────
+  async function carregarCategorias() {
+    if (!SB_URL || !SB_KEY) return
+    try {
+      const res = await fetch(`${SB_URL}/rest/v1/Link?select=categoria&categoria=not.is.null`, {
+        headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
+      })
+      const data = await res.json()
+
+      // Pega categorias únicas
+      const unicas = [...new Set(data.map(d => d.categoria).filter(Boolean))].sort()
+
+      // Preenche dropdown
+      const drop = document.getElementById('dropCategoria')
+      drop.innerHTML = '<option value="">Todas as categorias</option>'
+      unicas.forEach(cat => {
+        const opt = document.createElement('option')
+        opt.value = cat
+        opt.textContent = cat
+        drop.appendChild(opt)
+      })
+
+      // Preenche botões (máx 8)
+      const catBtns = document.getElementById('catBtns')
+      catBtns.innerHTML = '<button class="filter-btn active" data-cat="">Todas</button>'
+      unicas.slice(0, 8).forEach(cat => {
+        const btn = document.createElement('button')
+        btn.className = 'filter-btn'
+        btn.dataset.cat = cat
+        btn.textContent = cat
+        catBtns.appendChild(btn)
+      })
+
+      // Re-aplica eventos nos novos botões
+      bindCatBtns()
+    } catch(e) {}
+  }
+
+  // ─── Eventos filtro plataforma ───────────────────────────────────
+  document.querySelectorAll('[data-plataforma]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-plataforma]').forEach(b => b.classList.remove('active'))
+      btn.classList.add('active')
+      filtroPlatforma = btn.dataset.plataforma
+      triggerBusca()
+    })
+  })
+
+  // ─── Eventos filtro categoria (botões) ───────────────────────────
+  function bindCatBtns() {
+    document.querySelectorAll('[data-cat]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-cat]').forEach(b => b.classList.remove('active'))
+        btn.classList.add('active')
+        filtroCategoria = btn.dataset.cat
+        document.getElementById('dropCategoria').value = filtroCategoria
+        triggerBusca()
+      })
+    })
+  }
+  bindCatBtns()
+
+  // ─── Evento dropdown categoria ───────────────────────────────────
+  document.getElementById('dropCategoria').addEventListener('change', (e) => {
+    filtroCategoria = e.target.value
+    // Sincroniza botões
+    document.querySelectorAll('[data-cat]').forEach(b => {
+      b.classList.toggle('active', b.dataset.cat === filtroCategoria)
+    })
+    triggerBusca()
+  })
+
+  // ─── Busca por texto ─────────────────────────────────────────────
+  document.getElementById('busca').addEventListener('input', (e) => {
+    clearTimeout(debounceTimer)
+    const texto = e.target.value.trim()
+    if (texto.length < 2 && !filtroCategoria) {
+      mostrarEstado('👆', 'Digite o nome do grupo para buscar')
+      setStatus('')
+      return
+    }
+    debounceTimer = setTimeout(triggerBusca, 350)
+  })
+
+  function triggerBusca() {
+    const texto = document.getElementById('busca').value.trim()
+    if (texto.length >= 2 || filtroCategoria) buscar(texto)
+  }
+
+  // ─── Busca principal ─────────────────────────────────────────────
+  async function buscar(texto) {
+    if (!SB_URL || !SB_KEY) { setStatus('⚠️ Configure o Supabase primeiro'); return }
+    setStatus('buscando')
+
+    let params = `select=nome,link,categoria&limit=50`
+    if (texto.length >= 2) params += `&nome=ilike.*${encodeURIComponent(texto)}*`
+    if (filtroPlatforma)   params += `&plataforma=eq.${encodeURIComponent(filtroPlatforma)}`
+    if (filtroCategoria)   params += `&categoria=eq.${encodeURIComponent(filtroCategoria)}`
+
+    try {
+      const res = await fetch(`${SB_URL}/rest/v1/Link?${params}`, {
+        headers: {
+          'apikey': SB_KEY,
+          'Authorization': `Bearer ${SB_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      if (!res.ok) { setStatus('❌ Erro: ' + await res.text()); return }
+      const data = await res.json()
+      renderizar(data, texto)
+
+      // Registra a busca na tabela buscas (silencioso, não bloqueia)
+      if (texto.length >= 2) {
+        const user = JSON.parse(localStorage.getItem('sb_user') || 'null')
+        fetch(`${SB_URL}/rest/v1/buscas`, {
+          method: 'POST',
+          headers: {
+            'apikey': SB_KEY,
+            'Authorization': `Bearer ${localStorage.getItem('sb_token') || SB_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify({
+            termo: texto,
+            user_email: user?.email || null
+          })
+        }).catch(() => {}) // ignora erros silenciosamente
+      }
+
+    } catch (e) {
+      setStatus('❌ Erro: ' + e.message)
+    }
+  }
+
+  // ─── Render ──────────────────────────────────────────────────────
+  function renderizar(grupos, texto) {
+    const container = document.getElementById('resultados')
+    if (!grupos || grupos.length === 0) {
+      mostrarEstado('😕', texto ? `Nenhum resultado para "${texto}"` : 'Nenhum grupo nessa categoria')
+      setStatus(''); return
+    }
+
+    setStatus(`${grupos.length} grupo${grupos.length > 1 ? 's' : ''} encontrado${grupos.length > 1 ? 's' : ''}`)
+
+    container.innerHTML = grupos.map((g, i) => {
+      const link = (g.link || '').toLowerCase()
+      let icone = '🔗', classBadge = 'outro'
+      if (link.includes('whatsapp') || link.includes('chat.whats')) { icone = '💬'; classBadge = 'wpp' }
+      if (link.includes('t.me') || link.includes('telegram'))       { icone = '✈️'; classBadge = 'tg' }
+
+      const nomeHL = texto.length >= 2 ? destacar(g.nome || '', texto) : (g.nome || '')
+
+      return `
+        <a class="grupo-item" href="${g.link}" target="_blank" rel="noopener" style="animation-delay:${i*25}ms">
+          <div class="grupo-info">
+            <div class="plataforma-badge ${classBadge}">${icone}</div>
+            <div>
+              <div class="grupo-nome">${nomeHL}</div>
+              ${g.categoria ? `<span class="cat-chip">${g.categoria}</span>` : ''}
+            </div>
+          </div>
+          <div class="entrar-btn">Entrar →</div>
+        </a>`
+    }).join('')
+  }
+
+  function destacar(texto, busca) {
+    const r = new RegExp(`(${busca.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi')
+    return texto.replace(r, '<mark style="background:rgba(0,229,255,0.2);color:var(--accent);border-radius:3px">$1</mark>')
+  }
+
+  function mostrarEstado(icon, msg) {
+    document.getElementById('resultados').innerHTML =
+      `<div class="estado"><div class="estado-icon">${icon}</div><p>${msg}</p></div>`
+  }
+
+  function setStatus(msg) {
+    const el = document.getElementById('status')
+    if (msg === 'buscando') el.innerHTML = `<div class="spinner"></div> Buscando...`
+    else el.innerHTML = msg ? `<div class="dot"></div> ${msg}` : ''
+  }
+</script>
+</body>
+</html> 
