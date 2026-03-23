@@ -567,6 +567,8 @@
       <input type="text" id="cfgUrl" placeholder="URL: https://xxx.supabase.co"/>
       <input type="text" id="cfgKey" placeholder="Service Role Key (secret)"/>
       <input type="text" id="cfgAnonKey" placeholder="Anon Key (public)"/>
+      <p style="margin-top:12px">Chave SerpAPI (busca de grupos na web)</p>
+      <input type="text" id="cfgSerpKey" placeholder="SerpAPI Key"/>
       <button onclick="salvarCfg()" style="background:rgba(255,193,7,0.1);border:1px solid rgba(255,193,7,0.3);color:var(--warn);border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;width:100%;font-family:'DM Sans',sans-serif;margin-top:4px">
         Salvar configuração
       </button>
@@ -715,11 +717,13 @@
     const url    = document.getElementById('cfgUrl').value.trim().replace(/\/$/, '')
     const secret = document.getElementById('cfgKey').value.trim()
     const anon   = document.getElementById('cfgAnonKey').value.trim()
-    if (!url || !secret || !anon) return alert('Preencha todos os campos de configuração')
+    const serp   = document.getElementById('cfgSerpKey').value.trim()
+    if (!url || !secret || !anon) return alert('Preencha URL, Service Role Key e Anon Key')
     SB_URL = url; SB_KEY = anon; SB_SECRET = secret
     localStorage.setItem('sb_url', url)
     localStorage.setItem('sb_key', anon)
     localStorage.setItem('sb_secret', secret)
+    if (serp) localStorage.setItem('serp_key', serp)
     alert('✅ Configuração salva!')
   }
 
@@ -727,6 +731,8 @@
   if (SB_URL) document.getElementById('cfgUrl').value = SB_URL
   if (SB_SECRET) document.getElementById('cfgKey').value = SB_SECRET
   if (SB_KEY) document.getElementById('cfgAnonKey').value = SB_KEY
+  const savedSerp = localStorage.getItem('serp_key')
+  if (savedSerp) document.getElementById('cfgSerpKey').value = savedSerp
 
   // ─── Login Admin ─────────────────────────────────────────────────
   async function loginAdmin() {
@@ -985,21 +991,35 @@
     const senha = document.getElementById('newSenha').value
     if (!email || !senha) return toast('Preencha email e senha.', 'erro')
     if (senha.length < 6) return toast('Senha deve ter pelo menos 6 caracteres.', 'erro')
+    if (!SB_SECRET) return toast('Service Role Key não configurada. Faça logout e configure.', 'erro')
 
-    const res  = await apiAdmin('/auth/v1/admin/users', {
-      method: 'POST',
-      body: JSON.stringify({ email, password: senha, email_confirm: true })
-    })
-    const data = await res.json()
+    const btn = document.querySelector('#sec-usuarios .btn-primary')
+    btn.innerHTML = '<span class="spinner-btn"></span> Criando...'
+    btn.disabled = true
 
-    if (res.ok) {
-      toast(`Usuário ${email} criado!`, 'ok')
-      document.getElementById('newEmail').value = ''
-      document.getElementById('newSenha').value = ''
-      carregarUsuarios()
-    } else {
-      toast(data.msg || 'Erro ao criar usuário.', 'erro')
+    try {
+      const res  = await apiAdmin('/auth/v1/admin/users', {
+        method: 'POST',
+        body: JSON.stringify({ email, password: senha, email_confirm: true })
+      })
+      const data = await res.json()
+
+      if (res.ok && !data.error) {
+        toast(`✅ Usuário ${email} criado!`, 'ok')
+        document.getElementById('newEmail').value = ''
+        document.getElementById('newSenha').value = ''
+        carregarUsuarios()
+      } else {
+        const errMsg = data.msg || data.error_description || data.message || JSON.stringify(data)
+        toast('Erro: ' + errMsg, 'erro')
+        console.error('Erro criar usuário:', data)
+      }
+    } catch(e) {
+      toast('Erro de conexão: ' + e.message, 'erro')
     }
+
+    btn.innerHTML = 'Criar usuário'
+    btn.disabled = false
   }
 
   async function deletarUsuario(id, email) {
