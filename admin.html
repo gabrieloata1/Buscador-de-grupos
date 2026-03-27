@@ -684,8 +684,8 @@
         <h3>➕ Criar novo usuário</h3>
         <div class="form-row">
           <div class="form-group">
-            <label>Email</label>
-            <input type="email" id="newEmail" placeholder="usuario@email.com"/>
+            <label>Usuário</label>
+            <input type="text" id="newEmail" placeholder="nome_do_usuario"/>
           </div>
           <div class="form-group">
             <label>Senha</label>
@@ -1030,10 +1030,10 @@
 
       document.getElementById('tblUsuarios').innerHTML = `
         <table>
-          <thead><tr><th>Email</th><th>Criado em</th><th>Último login</th><th>Ação</th></tr></thead>
+          <thead><tr><th>Usuário</th><th>Criado em</th><th>Último login</th><th>Ação</th></tr></thead>
           <tbody>${users.map(u => `
             <tr>
-              <td>${u.email}</td>
+              <td>${(u.email || '').replace('@buscador.app', '')}</td>
               <td>${formatDate(u.created_at)}</td>
               <td>${u.last_sign_in_at ? formatDate(u.last_sign_in_at) : '<span style="color:var(--muted)">Nunca</span>'}</td>
               <td><button class="btn-danger" onclick="deletarUsuario('${u.id}', '${u.email}')">Excluir</button></td>
@@ -1045,10 +1045,13 @@
     }
   }
 
+  const DOMINIO = '@buscador.app'
+
   async function criarUsuario() {
-    const email = document.getElementById('newEmail').value.trim()
+    const usuario = document.getElementById('newEmail').value.trim()
     const senha = document.getElementById('newSenha').value
-    if (!email || !senha) return toast('Preencha email e senha.', 'erro')
+    const email = usuario + DOMINIO
+    if (!usuario || !senha) return toast('Preencha usuário e senha.', 'erro')
     if (senha.length < 6) return toast('Senha deve ter pelo menos 6 caracteres.', 'erro')
     if (!SB_SECRET) return toast('Service Role Key não configurada. Faça logout e configure.', 'erro')
 
@@ -1064,7 +1067,7 @@
       const data = await res.json()
 
       if (res.ok && !data.error) {
-        toast(`✅ Usuário ${email} criado!`, 'ok')
+        toast(`✅ Usuário ${usuario} criado!`, 'ok')
         document.getElementById('newEmail').value = ''
         document.getElementById('newSenha').value = ''
         carregarUsuarios()
@@ -1082,7 +1085,8 @@
   }
 
   async function deletarUsuario(id, email) {
-    if (!confirm(`Excluir usuário ${email}?`)) return
+    const usuario = email.replace('@buscador.app', '')
+    if (!confirm(`Excluir usuário ${usuario}?`)) return
     const res = await apiAdmin(`/auth/v1/admin/users/${id}`, { method: 'DELETE' })
     if (res.ok) { toast('Usuário excluído!', 'ok'); carregarUsuarios() }
     else toast('Erro ao excluir.', 'erro')
