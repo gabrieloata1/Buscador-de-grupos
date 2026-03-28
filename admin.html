@@ -567,8 +567,8 @@
       <input type="text" id="cfgUrl" placeholder="URL: https://xxx.supabase.co"/>
       <input type="text" id="cfgKey" placeholder="Service Role Key (secret)"/>
       <input type="text" id="cfgAnonKey" placeholder="Anon Key (public)"/>
-      <p style="margin-top:12px">Chave SerpAPI (busca de grupos na web)</p>
-      <input type="text" id="cfgSerpKey" placeholder="SerpAPI Key"/>
+      <p style="margin-top:12px">Chave Serper.dev (busca de grupos na web)</p>
+      <input type="text" id="cfgSerpKey" placeholder="Serper.dev API Key"/>
       <button onclick="salvarCfg()" style="background:rgba(255,193,7,0.1);border:1px solid rgba(255,193,7,0.3);color:var(--warn);border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;width:100%;font-family:'DM Sans',sans-serif;margin-top:4px">
         Salvar configuração
       </button>
@@ -633,7 +633,7 @@
         <h3>⚙️ Configurações do App</h3>
         <div class="form-row">
           <div class="form-group">
-            <label>Chave SerpAPI (busca na web)</label>
+            <label>Chave Serper.dev (busca na web)</label>
             <input type="text" id="serpKeyInput" placeholder="Cole a nova chave aqui"/>
           </div>
         </div>
@@ -738,7 +738,7 @@
     localStorage.setItem('sb_url', url)
     localStorage.setItem('sb_key', anon)
     localStorage.setItem('sb_secret', secret)
-    if (serp) localStorage.setItem('serp_key', serp)
+    if (serp) localStorage.setItem('serper_key', serp)
     alert('✅ Configuração salva!')
   }
 
@@ -746,7 +746,7 @@
   if (SB_URL) document.getElementById('cfgUrl').value = SB_URL
   if (SB_SECRET) document.getElementById('cfgKey').value = SB_SECRET
   if (SB_KEY) document.getElementById('cfgAnonKey').value = SB_KEY
-  const savedSerp = localStorage.getItem('serp_key')
+  const savedSerp = localStorage.getItem('serper_key')
   if (savedSerp) document.getElementById('cfgSerpKey').value = savedSerp
 
   // ─── Login Admin ─────────────────────────────────────────────────
@@ -820,7 +820,7 @@
 
   async function carregarSerpKey() {
     try {
-      const res  = await api('/rest/v1/configuracoes?chave=eq.serp_key&select=valor')
+      const res  = await api('/rest/v1/configuracoes?chave=eq.serper_key&select=valor')
       const data = await res.json()
       if (data?.[0]?.valor) {
         const val = data[0].valor
@@ -838,7 +838,7 @@
     statusEl.textContent = 'Salvando...'
 
     // Tenta update primeiro, se não existir faz insert
-    const res = await api('/rest/v1/configuracoes?chave=eq.serp_key', {
+    const res = await api('/rest/v1/configuracoes?chave=eq.serper_key', {
       method: 'PATCH',
       body: JSON.stringify({ valor: novaChave }),
       headers: { 'Prefer': 'return=minimal' }
@@ -849,7 +849,7 @@
       if (res.status === 404) {
         await api('/rest/v1/configuracoes', {
           method: 'POST',
-          body: JSON.stringify({ chave: 'serp_key', valor: novaChave })
+          body: JSON.stringify({ chave: 'serper_key', valor: novaChave })
         })
       }
     }
@@ -857,7 +857,7 @@
     document.getElementById('serpKeyInput').value = ''
     document.getElementById('serpKeyInput').placeholder = novaChave.substring(0, 12) + '••••••••••••••••••••'
     statusEl.textContent = '✅ Chave atualizada!'
-    toast('Chave SerpAPI atualizada!', 'ok')
+    toast('Chave Serper.dev atualizada!', 'ok')
     setTimeout(() => statusEl.textContent = '✅ Chave ativa', 3000)
   }
 
