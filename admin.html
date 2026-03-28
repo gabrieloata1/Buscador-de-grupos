@@ -898,7 +898,11 @@
     // Total cats
     const rc = await api('/rest/v1/Link?select=categoria&categoria=not.is.null')
     const cats = await rc.json()
-    const unicas = new Set(cats.map(c => c.categoria).filter(Boolean))
+    const unicas = new Set()
+    cats.forEach(function(c) {
+      if (Array.isArray(c.categoria)) c.categoria.forEach(function(x){ if(x) unicas.add(x) })
+      else if (c.categoria) unicas.add(c.categoria)
+    })
     document.getElementById('statCats').textContent = unicas.size
 
     // Usuários via admin API
@@ -952,10 +956,10 @@
         <tbody>${lista.map(g => `
           <tr>
             <td>${g.nome}</td>
-            <td>${g.categoria || '<span style="color:var(--muted)">—</span>'}</td>
+            <td>${Array.isArray(g.categoria) && g.categoria.length ? g.categoria.join(', ') : (g.categoria || '<span style="color:var(--muted)">—</span>')}</td>
             <td><div class="td-link">${g.link}</div></td>
             <td>
-              <button class="btn-edit" onclick="editarGrupo(${g.id}, '${esc(g.nome)}', '${esc(g.link)}', '${esc(g.categoria||'')}')">Editar</button>
+              <button class="btn-edit" onclick="editarGrupo(${g.id}, '${esc(g.nome)}', '${esc(g.link)}', '${esc(Array.isArray(g.categoria) ? g.categoria.join(', ') : (g.categoria||''))}')">Editar</button>
               <button class="btn-danger" onclick="deletarGrupo(${g.id})">Deletar</button>
             </td>
           </tr>`).join('')}
@@ -965,10 +969,11 @@
 
   function filtrarTabela(termo, id) {
     if (id === 'tblGrupos') {
-      renderGrupos(todosGrupos.filter(g =>
-        g.nome?.toLowerCase().includes(termo.toLowerCase()) ||
-        g.categoria?.toLowerCase().includes(termo.toLowerCase())
-      ))
+      const t = termo.toLowerCase()
+      renderGrupos(todosGrupos.filter(function(g) {
+        const catStr = Array.isArray(g.categoria) ? g.categoria.join(', ') : (g.categoria || '')
+        return (g.nome || '').toLowerCase().includes(t) || catStr.toLowerCase().includes(t)
+      }))
     }
   }
 
@@ -978,9 +983,10 @@
     const cat  = document.getElementById('addCat').value.trim()
     if (!nome || !link) return toast('Preencha nome e link.', 'erro')
 
+    const catArray = cat ? cat.split(',').map(function(s){ return s.trim() }).filter(Boolean) : null
     const res = await api('/rest/v1/Link', {
       method: 'POST',
-      body: JSON.stringify({ nome, link, categoria: cat || null })
+      body: JSON.stringify({ nome, link, categoria: catArray })
     })
 
     if (res.ok) {
@@ -1006,12 +1012,14 @@
     if (!novoNome) return
     const novoLink = prompt('Link:', link)
     if (!novoLink) return
-    const novaCat = prompt('Categoria:', cat)
+    const novaCat = prompt('Categorias (separe por vírgula):', cat)
 
-    api(`/rest/v1/Link?id=eq.${id}`, {
+    const catArray = novaCat ? novaCat.split(',').map(function(s){ return s.trim() }).filter(Boolean) : null
+
+    api('/rest/v1/Link?nome=eq.' + encodeURIComponent(nome) + '&link=eq.' + encodeURIComponent(link), {
       method: 'PATCH',
-      body: JSON.stringify({ nome: novoNome, link: novoLink, categoria: novaCat || null })
-    }).then(r => {
+      body: JSON.stringify({ nome: novoNome, link: novoLink, categoria: catArray })
+    }).then(function(r) {
       if (r.ok) { toast('Grupo atualizado!', 'ok'); carregarGrupos() }
       else toast('Erro ao atualizar.', 'erro')
     })
